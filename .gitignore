@@ -1,0 +1,14 @@
+/Library
+/*.csproj
+/Logs/Packages-Update.log
+/*.sln
+/obj/Debug
+/Packages/packages-lock.json
+/Assets/Mods
+/Assets/Mods.meta
+/.vs/ModProj/v16/*.suo
+/Temp
+/.vsconfig
+/Assets/Resources/GenPrefab
+/Assets/Resources/GenPrefab.meta
+/.vs

@@ -1,0 +1,173 @@
+local propSpell = {}
+
+function propSpell:Awake()
+    self.scheId = null
+	self.buttonHasBeenPressed = false
+
+    self.settingsMgr = CL.SettingMgr.Instance
+	self.player = CL.InteractCharacter.PlayerInstance
+	self.textConfig = CL.GameDataMgr.GetData(typeof(CL.TextConfig)) 
+	local leftHand = self.player.hands[1]
+	local rightHand = self.player.hands[0]
+	self.xButton = leftHand.inputs[CL.VRTKInputButton.ButtonType.ButtonOne]
+	self.aButton = rightHand.inputs[CL.VRTKInputButton.ButtonType.ButtonOne]
+	self.volume = 0.5;
+
+	self.currentSongIndex = 0
+	self.songs = GetSongs()
+	self.songsCount = #(self.songs)
+end
+
+function GetSongs()
+	return dictionaryToTable(CL.UnlockContentConfig:GetConfig().unlockInfos);
+end
+
+function dictionaryToTable(clrlist)	
+    local t = {}
+    local it = clrlist:GetEnumerator()
+	local i = 0;
+    while it:MoveNext() do
+		if(string.find(it.Current.Key, "_PropSpawner_PROP_") == nil) then
+			goto continue;
+		end
+		t[i] = it.Current.Key
+		i = i+1;
+		::continue::
+    end
+    return t
+end
+
+function propSpell:UpdateSkill()
+    if self.hand == nil then
+        return
+    end
+
+	print("spawn prop!")
+end
+
+function propSpell:UpdateProp()
+	actualSongListSize = 0
+	for _ in pairs(self.songs) do actualSongListSize = actualSongListSize + 1 end
+
+	if (actualSongListSize == 0) then
+        self.songTextPreview.text = "No props were found. Install some!"
+        return
+    end
+
+	--SPAWN SONG DETAILS
+	--SpawnSong(self)	
+	SpawnAlbumPreview(self)
+
+	--SET SONGPREVIEW
+	self.albumPreview.texture = self.spawnedSprite
+	--self.songTextPreview.text = self.songs[self.currentSongIndex]
+	local songInfo = self.textConfig:GetDataByName(self.songs[self.currentSongIndex])
+	--print(songInfo.Text)
+	self.songTextPreview.text = songInfo.Text[0]
+end
+
+function SpawnSong(self)
+	if (self.spawnedAudioClip ~= nil) then
+		CL.ResourceMgr.Destroy(self.spawnedAudioClip)
+	end
+
+	local newSong = self.songs[self.currentSongIndex]
+
+	local rotation = UE.Quaternion.Euler(0,0,0);
+	local position = UE.Vector3(0,0,0); 
+
+	self.spawnedAudioClip = CL.ResourceMgr.Instantiate("FlyObj/" .. newSong, self.spawnLocation.transform.position, self.spawnLocation.transform.rotation)
+end
+
+function SpawnAlbumPreview(self)
+	if (self.spawnedSprite ~= nil) then
+		CL.ResourceMgr.Destroy(self.spawnedSprite)
+	end
+
+	local newSong = self.songs[self.currentSongIndex]
+	self.spawnedSprite = CL.ResourceMgr.Instantiate("ICon/" .. newSong)
+end
+
+function propSpell:NextSong()
+	if (self.currentSongIndex == self.songsCount) then
+		self.currentSongIndex = self.songsCount
+		self:UpdateProp()
+		return
+	end
+
+	self.currentSongIndex = self.currentSongIndex + 1
+	self:UpdateProp()
+end
+
+function propSpell:PreviousSong()
+	if (self.currentSongIndex == 0) then
+		self.currentSongIndex = 0
+		self:UpdateProp()
+		return
+	end
+
+	self.currentSongIndex = self.currentSongIndex - 1
+	self:UpdateProp()
+end
+
+function propSpell:StopSong()
+
+end
+
+function propSpell:OnSlot(slot, t)
+    if (t) then
+	    self.hand = slot:GetAttachedHand()
+
+		local schedulerInterval = 0.02;
+		local timeBeforeStopping = -1;
+		local timeBeforeStarting = 0;
+
+		self.scheId = CL.Scheduler.Create({},
+		function(sche, t, s)
+			if self.buttonHasBeenPressed then
+				if self.xButton.IsPressed then
+					return
+				end
+				if self.aButton.IsPressed then
+					return
+				end
+
+				self.buttonHasBeenPressed = false
+				return
+			end
+
+			if self.xButton.IsPressed then
+				self.buttonHasBeenPressed = true
+				self:PreviousSong()
+				return
+			end
+
+			if self.aButton.IsPressed then
+				self.buttonHasBeenPressed = true
+				self:NextSong()
+				return
+			end
+		end
+		, schedulerInterval, timeBeforeStopping, timeBeforeStarting)
+		:SetUpdateChannel(CL.Scheduler.UpdateChannel.FixedUpdate)
+		:IgnoreTimeScale(true)
+		:SetOnStop(function(sche)
+			print("Stopping input listener")
+		end).actionId
+    else
+	    self.hand = nil
+        CL.Scheduler.RemoveSchedule(self.scheId)
+    end
+
+	CL.Scheduler.Create(self, 
+		function(sche, ts, ss)
+			self.songPreview:SetActive(t)
+		end
+	)
+end
+
+function propSpell:OnDestroy()
+    CL.Scheduler.RemoveSchedule(self.scheId)
+end
+
+return Class(Require("LuaScript/UF_PropSpawner_SpellBaseScript"), nil, propSpell)

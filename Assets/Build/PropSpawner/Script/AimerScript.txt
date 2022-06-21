@@ -1,0 +1,57 @@
+local table = {}
+
+function table:Awake()
+    self.scheId = null;
+    self.schedulerInterval = 0.02;
+    self.timeBeforeStopping = -1;
+    self.timeBeforeStarting = 0;
+end
+
+function table:Start()
+    self.scheId = CL.Scheduler.Create({},
+    function(sche, t, s)
+		self:UpdateAimer()
+    end
+    , self.schedulerInterval, self.timeBeforeStopping, self.timeBeforeStarting)
+    :SetUpdateChannel(CL.Scheduler.UpdateChannel.FixedUpdate)
+    :IgnoreTimeScale(true)
+    :SetOnStop(function(sche)
+    end).actionId
+end
+
+function table:UpdateAimer()
+	self:RotateDestinationLocation()
+
+	local fwd = self.raycastStartLocation:TransformDirection(UE.Vector3.forward);
+	local isHit, hitInfo = UE.Physics.SphereCast(self.raycastStartLocation.position, 0.02, fwd, 50, CL.LayerDefine.EnvLayerMask.value)
+
+	if hitInfo.distance < 1 then
+		self:MoveDestinationLocationToFallback();
+		do return end
+	end
+
+	if not isHit then
+		self:MoveDestinationLocationToFallback();
+		do return end
+	end
+
+	self:MoveDestinationLocationTo(hitInfo.point);
+end
+
+function table:RotateDestinationLocation()
+	self.propDestination.eulerAngles = UE.Vector3(0, self.raycastStartLocation.eulerAngles.z, 0);
+end
+
+function table:MoveDestinationLocationTo(newLocation)
+	self.propDestination.position = newLocation;
+end
+
+function table:MoveDestinationLocationToFallback()
+	self.propDestination.position = self.propFallbackSpawnLocation.position;
+end
+
+function table:OnDestroy()
+    CL.Scheduler.RemoveSchedule(self.scheId)
+end
+
+return Class(nil,nil,table)

@@ -15,7 +15,7 @@ MonoBehaviour:
   m_GroupName: Default Local Group
   m_Data:
     m_SerializedData: []
-  m_GUID: c0e216a8a91c4134f8f41b0b79c5c8e7
+  m_GUID: b0bbeb03dc663b54091e9e1747e2fc99
   m_SerializeEntries:
   - m_GUID: 2623d6cc0169c4241891f6a73f6bbd23
     m_Address: LuaScript/UF_PropSpawner_SpellBaseScript
@@ -23,6 +23,10 @@ MonoBehaviour:
     m_SerializedLabels: []
   - m_GUID: 17be34bb69f4dba48b118e1157eb32ca
     m_Address: Weapon/UF_PropSpawner_PropSpawner
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+  - m_GUID: 82a4f125f30d7714aa9d08d600f6e357
+    m_Address: LuaScript/UF_PropSpawner_AimerScript
     m_ReadOnly: 0
     m_SerializedLabels: []
   - m_GUID: f9a62dc9e6c3eee4b9f7b55238babef8

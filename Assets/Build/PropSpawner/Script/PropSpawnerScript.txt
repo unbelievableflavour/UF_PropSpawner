@@ -67,9 +67,7 @@ function propSpell:UpdateProp()
 end
 
 function propSpell:SpawnSong(self)
-	if (self.spawnedPreviewProp ~= nil) then
-		CL.ResourceMgr.Destroy(self.spawnedPreviewProp)
-	end
+	self:RemovePropIfThereIsOne()
 
 	local newSong = self.props[self.currentPropIndex]
 	self.spawnedPreviewProp = CL.ResourceMgr.Instantiate("FlyObj/" .. newSong .. "_Preview", self.spawnLocation.transform.position, self.spawnLocation.transform.rotation)
@@ -114,13 +112,16 @@ end
 function propSpell:OnSlot(slot, t)
     if (t) then
 	    self.hand = slot:GetAttachedHand()
-
+		print(self.hand)
 		local schedulerInterval = 0.02;
 		local timeBeforeStopping = -1;
 		local timeBeforeStarting = 0;
 
 		self.scheId = CL.Scheduler.Create({},
 		function(sche, t, s)
+			if self.hand == nil then
+				return
+			end
 			self:listenForButtonInput()
 			self:repositionProp()
 		end
@@ -137,7 +138,11 @@ function propSpell:OnSlot(slot, t)
 
 	CL.Scheduler.Create(self, 
 		function(sche, ts, ss)
-			self.songPreview:SetActive(t)
+			local shouldShow = t and self.hand ~= nil
+			self.songPreview:SetActive(shouldShow)
+			if self.spawnedPreviewProp ~= nil then
+				self.spawnedPreviewProp:SetActive(shouldShow)
+			end
 		end
 	)
 end
@@ -179,6 +184,12 @@ end
 
 function propSpell:OnDestroy()
     CL.Scheduler.RemoveSchedule(self.scheId)
+end
+
+function propSpell:RemovePropIfThereIsOne()
+	if (self.spawnedPreviewProp ~= nil) then
+		CL.ResourceMgr.Destroy(self.spawnedPreviewProp)
+	end
 end
 
 return Class(Require("LuaScript/UF_PropSpawner_SpellBaseScript"), nil, propSpell)
